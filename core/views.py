@@ -9,17 +9,34 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
 @api_view(['POST'])
 def SignUp(request):
-	username = request.data.get('username')
-	email = request.data.get('email')
-	password = request.data.get('password')
+    username = request.data.get('username')
+    email = request.data.get('email')
+    password = request.data.get('password')
 
-	new_user = User.objects.create_user(username=username, email=email, password=password)
-	new_user.save()
+    # Basic validation check
+    if not username or not email or not password:
+        return Response({"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-	return Response({"messsage": "User created successfully"})
+    # Check if user already exists
+    if User.objects.filter(username=username).exists() or User.objects.filter(email=email).exists():
+        return Response({"error": "Username or email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create user
+    new_user = User.objects.create_user(username=username, email=email, password=password)
+    new_user.save()
+
+    # Generate JWT tokens for the newly created user
+    refresh = RefreshToken.for_user(new_user)
+
+    return Response({
+        "message": "User created successfully",
+        "access": str(refresh.access_token),
+        "refresh": str(refresh)
+    }, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET'])
