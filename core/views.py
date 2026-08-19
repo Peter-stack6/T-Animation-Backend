@@ -76,6 +76,17 @@ def GetFreeCourses(request):
     free_courses = list(FreeCourse.objects.values())
     return JsonResponse(free_courses, safe=False)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def GetFreeCourse(request, course_id):
+    free_course = get_object_or_404(FreeCourse, pk=course_id)
+    return Response({
+        "title": free_course.title,
+        "description": free_course.description,
+        "youtube_id": free_course.youtube_id,
+        "coin_reward": free_course.coin_reward
+    }, status = status.HTTP_200_OK)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def PurchaseCourse(request):
@@ -139,3 +150,12 @@ def PurchaseResource(request):
                 status = status.HTTP_400_BAD_REQUEST
             )
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    refresh_token = request.data.get("refresh")
+
+    if refresh_token:
+        RefreshToken(refresh_token).blacklist()
+
+    return Response({"message": "Logged out successfully."})
